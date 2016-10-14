@@ -1,0 +1,19 @@
+{
+  "name": "secretsanta",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@types/lodash": "^4.14.37",
+    "@types/node": "^6.0.45",
+    "@types/twilio": "0.0.5",
+    "lodash": "^4.16.4",
+    "rc-yaml": "^1.0.0",
+    "twilio": "^2.11.0"
+  }
+}
