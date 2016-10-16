@@ -34,30 +34,11 @@ class Person {
 }
 
 class Pairing {
-  a: string;
-  b: string;
-
-  constructor(a: string, b: string) {
-    if (a < b) {
-      this.a = a;
-      this.b = b;
-
-    } else {
-      this.a = b;
-      this.b = a;
-    }
-  }
-
-  equals(other: Pairing) {
-    return this.a === other.a && this.b === other.b;
+  constructor(public a: string, public b: string) {
   }
 
   toString() {
-    return `${this.a}×${this.b}`;
-  }
-
-  has(name: string) {
-    return this.a === name || this.b === name;
+    return `${this.a}→${this.b}`;
   }
 }
 
@@ -69,11 +50,13 @@ function generatePairs(people: Person[], avoidList: Pairing[]) {
   let pairs: Pairing[] = [];
 
   for (let i = 0; i < people.length; i++) {
-    for (let j = i + 1; j < people.length; j++) {
-      let pair = new Pairing(people[i].name, people[j].name);
+    for (let j = 0; j < people.length; j++) {
+      if (i !== j) {
+        let pair = new Pairing(people[i].name, people[j].name);
 
-      if (!avoid[pair.toString()]) {
-        pairs.push(pair);
+        if (!avoid[pair.toString()]) {
+          pairs.push(pair);
+        }
       }
     }
   }
@@ -86,7 +69,7 @@ function pickPair(pairs: Pairing[]): PickResult {
   let n = Math.floor(Math.random() * pairs.length);
   let pair = pairs[n];
 
-  return [pair, pairs.filter((p) => !(p.has(pair.a) || p.has(pair.b)))]; 
+  return [pair, pairs.filter((p) => p.a !== pair.a && p.b !== pair.b)]; 
 }
 
 
@@ -100,21 +83,21 @@ function sendMessage(a: Person, b: Person) {
 
 
 let people = config.people.map((p) => new Person(p.name, p.phone));
-
-let allPairs = generatePairs(
-  people,
-  config.avoid.map((a) => new Pairing(a[0], a[1]))
-);
+let avoid = _.flatMap(config.avoid, (a) => [new Pairing(a[0], a[1]), new Pairing(a[1], a[0])]);
+let allPairs = generatePairs(people, avoid);
 
 let pair;
 let pairings: Pairing[] = [];
+let attempt = 0;
 
-while (allPairs.length) {
-  [pair, allPairs] = pickPair(allPairs);
-  pairings.push(pair);
+while (pairings.length < people.length) {
+  let currentPairs = allPairs;
+  pairings = [];
+  console.log(`attempt ${attempt++}`);
 
-  if (!config.sendTexts) {
-    console.log(pair.toString());
+  while (currentPairs.length) {
+    [pair, currentPairs] = pickPair(currentPairs);
+    pairings.push(pair);
   }
 }
 
@@ -122,10 +105,7 @@ if (config.sendTexts) {
   let map = _.keyBy(people, (p) => p.name);
 
   Promise.all(
-    _.flatMap(pairings, (p) => [
-      sendMessage(map[p.a], map[p.b]),
-      sendMessage(map[p.b], map[p.a])
-    ])
+    _.map(pairings, (p) => sendMessage(map[p.a], map[p.b]))
   ).then(
     (result) => {
       console.log('Messages sent!');
@@ -134,7 +114,8 @@ if (config.sendTexts) {
       console.error(err);
     }
   );
+} else {
+  pairings.forEach((pair) => console.log(pair.toString()));
 }
 
 
- 
