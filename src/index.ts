@@ -1,28 +1,34 @@
 import * as _ from 'lodash';
-import * as twilio from 'twilio';
-
+import * as rc from 'rc-yaml';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as gmail from 'gmail-send';
 
 interface Config {
-  twilio: {
-    accountSid: string,
-    authToken: string,
-    number: string
+  gmail: {
+    user: string;
+    password: string;
+    subject: string;
   };
-
-  people: {name: string, phone: string}[];
+  people: { name: string; email: string }[];
   avoid: [string, string][];
-  sendTexts: boolean;
+  dryRun: boolean;
 }
 
-const config: Config = require('rc-yaml')(require('../package.json').name, {
-  sendTexts: false
+const config: Config = rc(require('../package.json').name, { dryRun: true });
+
+const send = gmail({
+  user: config.gmail.user,
+  pass: config.gmail.password
 });
 
-const client = new twilio.RestClient(config.twilio.accountSid, config.twilio.authToken);
+const subject = _.template(config.gmail.subject);
+const emailHtml = _.template(
+  fs.readFileSync(path.resolve(__dirname, '..', 'template.html'), 'utf8')
+);
 
 class Person {
-  constructor(public name?: string, public phone?: string) {
-  }
+  constructor(public name?: string, public email?: string) {}
 
   equals(other: Person) {
     return other instanceof Person && other.name === this.name;
@@ -34,8 +40,7 @@ class Person {
 }
 
 class Pairing {
-  constructor(public a: string, public b: string) {
-  }
+  constructor(public a: string, public b: string) {}
 
   toString() {
     return `${this.a}→${this.b}`;
@@ -44,9 +49,10 @@ class Pairing {
 
 type PickResult = [Pairing, Pairing[]];
 
-
 function generatePairs(people: Person[], avoidList: Pairing[]) {
-  let avoid: _.Dictionary<Pairing> = _.keyBy(avoidList, (pair) => pair.toString());
+  let avoid: _.Dictionary<Pairing> = _.keyBy(avoidList, pair =>
+    pair.toString()
+  );
   let pairs: Pairing[] = [];
 
   for (let i = 0; i < people.length; i++) {
@@ -64,26 +70,38 @@ function generatePairs(people: Person[], avoidList: Pairing[]) {
   return pairs;
 }
 
-
 function pickPair(pairs: Pairing[]): PickResult {
   let n = Math.floor(Math.random() * pairs.length);
   let pair = pairs[n];
 
-  return [pair, pairs.filter((p) => p.a !== pair.a && p.b !== pair.b)]; 
+  return [pair, pairs.filter(p => p.a !== pair.a && p.b !== pair.b)];
 }
-
 
 function sendMessage(a: Person, b: Person) {
-  return client.sendMessage({
-    from: config.twilio.number,
-    to: a.phone,
-    body: `SECRET SANTA: Hi ${a.name}, your pairing is ${b.name}.  Ho, ho, ho`
-  });
+  const data = { name: a.name, recipient: b.name };
+
+  return new Promise((resolve, reject) =>
+    send(
+      {
+        to: a.email,
+        subject: subject(data),
+        html: emailHtml(data)
+      },
+      (err, result) => {
+        if (err) reject(err);
+        else resolve(result);
+      }
+    )
+  );
 }
 
+let people = config.people.map(p => new Person(p.name, p.email));
 
-let people = config.people.map((p) => new Person(p.name, p.phone));
-let avoid = _.flatMap(config.avoid, (a) => [new Pairing(a[0], a[1]), new Pairing(a[1], a[0])]);
+let avoid = _.flatMap(config.avoid, a => [
+  new Pairing(a[0], a[1]),
+  new Pairing(a[1], a[0])
+]);
+
 let allPairs = generatePairs(people, avoid);
 
 let pair;
@@ -101,21 +119,17 @@ while (pairings.length < people.length) {
   }
 }
 
-if (config.sendTexts) {
-  let map = _.keyBy(people, (p) => p.name);
+if (!config.dryRun) {
+  let map = _.keyBy(people, p => p.name);
 
-  Promise.all(
-    _.map(pairings, (p) => sendMessage(map[p.a], map[p.b]))
-  ).then(
-    (result) => {
+  Promise.all(_.map(pairings, p => sendMessage(map[p.a], map[p.b]))).then(
+    result => {
       console.log('Messages sent!');
     },
-    (err) => {
+    err => {
       console.error(err);
     }
   );
 } else {
-  pairings.forEach((pair) => console.log(pair.toString()));
+  pairings.forEach(pair => console.log(pair.toString()));
 }
-
-

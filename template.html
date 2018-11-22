@@ -1,0 +1,96 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title></title>
+
+    <style type="text/css">
+      *:not(br):not(tr):not(html) {
+        font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif;
+        box-sizing: border-box;
+      }
+
+      body {
+        width: 100% !important;
+        height: 100%;
+        margin: 0;
+        line-height: 1.4;
+        background-color: #f2f4f6;
+        color: #74787e;
+        -webkit-text-size-adjust: none;
+      }
+
+      p,
+      ul,
+      ol,
+      blockquote {
+        line-height: 1.4;
+        text-align: left;
+      }
+
+      a {
+        color: #3869d4;
+      }
+
+      a img {
+        border: none;
+      }
+
+      td {
+        word-break: break-word;
+      }
+
+      .email-wrapper {
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        background-color: #f2f4f6;
+      }
+
+      .box {
+        width: 570px;
+        margin: 20px auto;
+        padding: 0;
+        background-color: #ffffff;
+      }
+
+      .logo {
+        width: 100px;
+        height: 100px;
+        margin: 15px;
+      }
+
+      .logo-cell {
+        width: 130px;
+      }
+    </style>
+  </head>
+  <body>
+    <table class="email-wrapper">
+      <tr>
+        <td align="center">
+          <table class="box">
+            <tr>
+              <td class="logo-cell">
+                <img
+                  src="http://img.talkandroid.com/uploads/2015/12/Google-Santa-Tracker-1.png"
+                  width="100"
+                  height="100"
+                  class="logo"
+                />
+              </td>
+              <td>
+                <h3>Secret santa</h3>
+                <p>Hi <%=name%>,</p>
+                <p>
+                  Please buy something nice for <strong><%=recipient%></strong>.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
